@@ -88,27 +88,19 @@ var _trainingset2 = _interopRequireDefault(_trainingset);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // Setup needed DOM elements
-var input = document.querySelector('#hexColor');
+var inputField = document.querySelector('#hexColor');
 var identifyButton = document.querySelector('#identify');
-var trainButton = document.querySelector('#train');
 var trainWithDataButton = document.querySelector('#trainWithData');
 var trainingAnswer = document.querySelector('#trainingAnswer');
 var output = document.querySelector('#output');
 var networkOutput = document.querySelector('#networkOutput');
 var identifiedOutput = document.querySelector('#identifiedOutput');
-var counterSpan = document.querySelector('#counter');
-
-// training counter
-var counter = 0;
-var training = false;
-var currentTrainingColor = 0;
 
 // Setup Synaptic Classes
-var Network = _synaptic2.default.Network;
 var Architect = _synaptic2.default.Architect;
 var Trainer = _synaptic2.default.Trainer;
 
-var network = new Architect.Perceptron(6, 12, 1);
+var network = new Architect.Perceptron(6, 3, 1);
 
 // Convert hex color to array
 // 'ffffff' -> [0.9375, 0.9375,0.9375, 0.9375, 0.9375, 0.9375]
@@ -120,11 +112,23 @@ function transformColor(hexColor) {
   });
 }
 
-// identify Button Handler
-identifyButton.addEventListener('click', identify);
+// train netowrk with trainingSet data
+function trainFromData(data) {
+  var trainer = new Trainer(network);
 
+  trainer.train(data, {
+    rate: 0.2,
+    iterations: 1000,
+    error: 0.005,
+    shuffle: true,
+    log: 10,
+    cost: Trainer.cost.CROSS_ENTROPY
+  });
+}
+
+// Identify the selected color
 function identify() {
-  var hexColor = input.value;
+  var hexColor = inputField.value;
 
   var data = transformColor(hexColor);
   var result = network.activate(data);
@@ -138,61 +142,10 @@ function identify() {
   }
 }
 
-// Train Button Handler
-trainButton.addEventListener('click', function () {
-  var trainingData = [];
-  var colors = [{
-    name: 'red',
-    value: 1
-  }, {
-    name: 'green',
-    value: 0.5
-  }, {
-    name: 'blue',
-    value: 0
-  }];
+// identify Button Handler
+identifyButton.addEventListener('click', identify);
 
-  if (!training) {
-    trainingAnswer.value = colors[currentTrainingColor].name;
-    training = true;
-  } else {
-    debugger;
-    var hexColor = _input.value;
-
-    var _input = transformColor(hexColor);
-
-    trainingData.push({
-      input: _input,
-      output: colors[currentTrainingColor].value
-    });
-
-    counterSpan.innerText = ++counter;
-    if (counter % 5 === 0) {
-      currentTrainingColor++;
-      trainingAnswer.value = colors[currentTrainingColor].name;
-    }
-
-    if (currentTrainingColor >= 5 * colors.length) {
-      trainFromData(data);
-      trainingAnswer.value = 'Trained!';
-    }
-  }
-});
-
-function trainFromData(data) {
-  var trainer = new Trainer(network);
-
-  trainer.train(data, {
-    rate: 0.2,
-    iterations: 80,
-    error: 0.005,
-    shuffle: true,
-    log: 10,
-    cost: Trainer.cost.CROSS_ENTROPY
-  });
-}
-
-// Train with Data Handler
+// TrainWithData Button Handler
 trainWithDataButton.addEventListener('click', function () {
   trainFromData(_trainingset2.default);
 });
@@ -207,7 +160,7 @@ var colorPicker = new _simpleColorPicker2.default({
 });
 
 colorPicker.onChange(function (color) {
-  input.value = color;
+  inputField.value = color;
 });
 
 /***/ }),
