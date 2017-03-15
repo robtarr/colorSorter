@@ -87,26 +87,31 @@ var _trainingset2 = _interopRequireDefault(_trainingset);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+// Setup needed DOM elements
 var input = document.querySelector('#hexColor');
-var sortButton = document.querySelector('#sort');
+var identifyButton = document.querySelector('#identify');
+var trainButton = document.querySelector('#train');
+var trainWithDataButton = document.querySelector('#trainWithData');
+var trainingAnswer = document.querySelector('#trainingAnswer');
 var output = document.querySelector('#output');
+var networkOutput = document.querySelector('#networkOutput');
+var identifiedOutput = document.querySelector('#identifiedOutput');
+var counterSpan = document.querySelector('#counter');
 
+// training counter
+var counter = 0;
+var training = false;
+var currentTrainingColor = 0;
+
+// Setup Synaptic Classes
 var Network = _synaptic2.default.Network;
 var Architect = _synaptic2.default.Architect;
 var Trainer = _synaptic2.default.Trainer;
 
-var network = new Architect.Perceptron(6, 3, 1);
-var trainer = new Trainer(network);
+var network = new Architect.Perceptron(6, 12, 1);
 
-trainer.train(_trainingset2.default, {
-  rate: 0.2,
-  iterations: 80,
-  error: 0.005,
-  shuffle: true,
-  log: 1,
-  cost: Trainer.cost.CROSS_ENTROPY
-});
-
+// Convert hex color to array
+// 'ffffff' -> [0.9375, 0.9375,0.9375, 0.9375, 0.9375, 0.9375]
 function transformColor(hexColor) {
   var digits = hexColor.replace('#', '').toString().split('');
 
@@ -115,19 +120,84 @@ function transformColor(hexColor) {
   });
 }
 
-sortButton.addEventListener('click', function () {
+// identify Button Handler
+identifyButton.addEventListener('click', identify);
+
+function identify() {
   var hexColor = input.value;
 
   var data = transformColor(hexColor);
-  var sorted = network.activate(data);
-
-  if (sorted > .5) {
+  var result = network.activate(data);
+  identifiedOutput.innerText = result;
+  if (result > 0.66) {
     output.innerText = 'RED!';
+  } else if (result > 0.33) {
+    output.innerText = 'GREEN!';
   } else {
     output.innerText = 'BLUE!';
   }
+}
+
+// Train Button Handler
+trainButton.addEventListener('click', function () {
+  var trainingData = [];
+  var colors = [{
+    name: 'red',
+    value: 1
+  }, {
+    name: 'green',
+    value: 0.5
+  }, {
+    name: 'blue',
+    value: 0
+  }];
+
+  if (!training) {
+    trainingAnswer.value = colors[currentTrainingColor].name;
+    training = true;
+  } else {
+    debugger;
+    var hexColor = _input.value;
+
+    var _input = transformColor(hexColor);
+
+    trainingData.push({
+      input: _input,
+      output: colors[currentTrainingColor].value
+    });
+
+    counterSpan.innerText = ++counter;
+    if (counter % 5 === 0) {
+      currentTrainingColor++;
+      trainingAnswer.value = colors[currentTrainingColor].name;
+    }
+
+    if (currentTrainingColor >= 5 * colors.length) {
+      trainFromData(data);
+      trainingAnswer.value = 'Trained!';
+    }
+  }
 });
 
+function trainFromData(data) {
+  var trainer = new Trainer(network);
+
+  trainer.train(data, {
+    rate: 0.2,
+    iterations: 80,
+    error: 0.005,
+    shuffle: true,
+    log: 10,
+    cost: Trainer.cost.CROSS_ENTROPY
+  });
+}
+
+// Train with Data Handler
+trainWithDataButton.addEventListener('click', function () {
+  trainFromData(_trainingset2.default);
+});
+
+// Color Picker
 var colorPicker = new _simpleColorPicker2.default({
   color: '#FF0000',
   background: '#454545',
@@ -135,6 +205,7 @@ var colorPicker = new _simpleColorPicker2.default({
   width: 200,
   height: 200
 });
+
 colorPicker.onChange(function (color) {
   input.value = color;
 });
@@ -2603,7 +2674,9 @@ Trainer.cost = {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = [{
+exports.default = [
+// red
+{
   input: [0.9375, 0.9375, 0, 0, 0, 0],
   output: [1]
 }, {
@@ -2615,7 +2688,25 @@ exports.default = [{
 }, {
   input: [0.3125, 0.125, 0, 0.3125, 0, 0.3125],
   output: [1]
+},
+
+// green
+{
+  input: [0, 0, 0.9375, 0.9375, 0, 0],
+  output: [0.5]
 }, {
+  input: [0, 0.6875, 0.625, 0.4375, 0, 0.6875],
+  output: [0.5]
+}, {
+  input: [0.1875, 0.0625, 0.5625, 0, 0.1875, 0.0625],
+  output: [0.5]
+}, {
+  input: [0.4375, 0.5625, 0.9375, 0.5625, 0.4375, 0.5625],
+  output: [0.5]
+},
+
+// blue
+{
   input: [0, 0, 0, 0, 0.9375, 0.9375],
   output: [0]
 }, {
